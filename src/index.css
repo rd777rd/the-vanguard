@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --color-ink: #0b0b0d;
+  --color-ink-soft: #121215;
+  --color-panel: #17171b;
+  --color-panel-raised: #1e1e23;
+  --color-line: #2a2a30;
+  --color-bone: #f4f1e9;
+  --color-bone-dim: #c9c4b6;
+  --color-gold: #e8b008;
+  --color-gold-soft: #f2c744;
+  --color-crimson: #c23b3b;
+  --color-emerald: #2f9e6b;
+  --color-azure: #3b82c2;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: local("Arial");
+  font-display: swap;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-ink);
+  color: var(--color-bone);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+/* subtle scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-ink);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gold);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.text-gradient-gold {
+  background: linear-gradient(90deg, #f2c744, #e8b008 45%, #c9840a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-noise {
+  background-image: radial-gradient(circle at 1px 1px, rgba(244,241,233,0.06) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+.card-hover {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  border-color: var(--color-gold);
+  box-shadow: 0 10px 40px -12px rgba(232, 176, 8, 0.25);
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.6s ease both;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
