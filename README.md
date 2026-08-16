@@ -80,6 +80,16 @@ Then open the printed local URL (defaults to `http://localhost:5173`). The front
 
 Because discussions, backing calls, listings, businesses, events, and resources are real models, anything seeded (or added by members) can be moderated, edited, or added to directly at `/admin/` — including adding a brand-new `Resource` with a new category, which will automatically show up as a filter chip on the Inform page with no code changes.
 
+## Deployment (Render)
+
+Live at **https://the-vanguard.onrender.com** — one Render web service running the whole app, not two:
+
+- `build.sh` runs `npm run build` first, then the Django build steps (`pip install`, `collectstatic`, `migrate`, `seed_demo_data`).
+- Django serves its own API under `/api/` and `/admin/` as usual. `whitenoise` also serves the built frontend's `dist/assets/*` directly (via `WHITENOISE_ROOT` in `settings.py`), and a catch-all view (`backend/config/views_spa.py`) returns `dist/index.html` for every other path, so React Router's client-side routes (`/connect`, `/support`, etc.) resolve correctly on a direct hit or page refresh — not just when navigated to client-side.
+- This exists because Render's static-site product needs its rewrite/redirect rules configured through the Dashboard UI (or a `render.yaml` blueprint) — there's no API for it — so a plain two-service split (API + static site) would 404 on every route but `/` with no way to fix it from here. Frontend and API being same-origin in production also means no CORS is actually in play there, even though `django-cors-headers` stays configured for local dev.
+- Database is SQLite on Render's ephemeral disk (by choice, to avoid the cost of a second Postgres instance) — **any real signups, posts, or listings created on the live site are wiped on the next deploy**, since `build.sh` re-seeds fresh demo data every time. Swap in a real Postgres (`DATABASE_URL` env var — `dj-database-url` already reads it) whenever that tradeoff stops being acceptable.
+- A separate static site, `the-vanguard-frontend` (https://the-vanguard-frontend.onrender.com), was created before this consolidation and is no longer used — it has the same unfixable routing problem described above. Safe to delete from the Render dashboard.
+
 ## Notes
 
-This ships configured for local development only: `DEBUG=True`, a placeholder `SECRET_KEY`, and CORS/allowed-hosts opened up to the Vite dev server. Set real values via environment variables (`DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CORS_ALLOWED_ORIGINS`) before deploying anywhere real. There's also no password-reset flow yet ("forgot password") — worth adding (email-based reset, or a magic link) before this handles real members' accounts.
+This ships configured for local development only: `DEBUG=True`, a placeholder `SECRET_KEY`, and CORS/allowed-hosts opened up to the Vite dev server. Production values are set as environment variables directly on the Render service (`DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`) rather than committed. There's also no password-reset flow yet ("forgot password") — worth adding (email-based reset, or a magic link) before this handles real members' accounts.
