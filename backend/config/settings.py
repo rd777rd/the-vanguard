@@ -164,10 +164,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 #
-# This project's own frontend is a separate Vite app deployed as its own
-# static site — these settings are only for Django's own static assets
-# (mainly the admin's CSS/JS), served directly by whitenoise so the API
-# service doesn't need a separate static file host.
+# Covers Django's own static assets (mainly the admin's CSS/JS).
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
@@ -176,6 +173,16 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
+
+# The built React/Vite frontend (repo_root/dist) is served straight out of
+# this same Django process too, via whitenoise — one deployed service
+# instead of splitting frontend/backend across two Render services, which
+# sidesteps needing a client-side-routing rewrite rule configured outside
+# of this repo. dist/assets/* lands at /assets/*; see config/views_spa.py
+# for the catch-all that serves dist/index.html for everything else.
+FRONTEND_DIST = BASE_DIR.parent / "dist"
+if FRONTEND_DIST.exists():
+    WHITENOISE_ROOT = FRONTEND_DIST
 
 
 # Email
