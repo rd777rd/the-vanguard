@@ -34,6 +34,17 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
+# Render (and most PaaS hosts) terminate TLS at a proxy and forward plain
+# HTTP internally — without this, Django thinks every request is insecure.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Needed for the Django admin login (and any other session-authenticated
+# POST) to pass CSRF checks when served from a different origin than
+# Django computes by default behind a proxy.
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
+]
+
 
 # Application definition
 
@@ -55,6 +66,7 @@ AUTH_USER_MODEL = "accounts.User"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -100,12 +112,21 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
+#
+# Falls back to local SQLite when DATABASE_URL isn't set (local dev).
+# Render provides DATABASE_URL automatically once a Postgres instance is
+# attached — that's what production runs on, since Render's disk isn't
+# persistent and SQLite would lose all data on every deploy/restart there.
+
+import dj_database_url
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": dj_database_url.config(
+        # .as_posix() matters here: on Windows, BASE_DIR renders with
+        # backslashes, which breaks sqlite URL parsing.
+        default=f"sqlite:///{(BASE_DIR / 'db.sqlite3').as_posix()}",
+        conn_max_age=600,
+    )
 }
 
 
@@ -142,8 +163,19 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
+#
+# This project's own frontend is a separate Vite app deployed as its own
+# static site — these settings are only for Django's own static assets
+# (mainly the admin's CSS/JS), served directly by whitenoise so the API
+# service doesn't need a separate static file host.
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 
 
 # Email
